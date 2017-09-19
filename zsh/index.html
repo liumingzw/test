@@ -8,6 +8,7 @@
 			font-family: digit;
 			src: url('digital-7_mono.ttf') format("truetype");
 		}
+
 	</style>
 	<link href="css/default.css" type="text/css" rel="stylesheet">
 	<script type="text/javascript" src="js/jquery.js"></script>
@@ -16,6 +17,7 @@
 </head>
 
 <body>
+    <audio src="music/Somewhere i have never travele.mp3" autoplay="autoplay" ></audio>
 	<div id="mainDiv">
 		<div id="content">
 			<div id="code">
@@ -24,7 +26,7 @@
 				<span class="space"/><span class="comments">* Write a romantic code for you.</span><br />
 				<span class="space"/><span class="comments">*/</span><br />
 				Boy i = <span class="keyword">new</span> Boy(<span class="string">"rocky"</span>);<br />
-				Girl u = <span class="keyword">new</span> Girl(<span class="string">"hf"</span>);<br />
+				Girl u = <span class="keyword">new</span> Girl(<span class="string">"Ivy"</span>);<br />
 				<span class="comments">// September 2017, I met you. </span><br />
 				i.love(u);<br />
 				<span class="comments">// You're an interesting girl.</span><br />
@@ -49,10 +51,6 @@
 			<div id="loveHeart">
 				<canvas id="garden"></canvas>
 				<div id="words">
-					<!-- <div id="messages">
-						
-						<div id="elapseClock"></div>
-					</div> -->
 					<div id="loveu">
 						<br/>
 						<div class="signature">- rocky</div>
@@ -60,10 +58,6 @@
 				</div>
 			</div>
 		</div>
-		<!-- <div id="copyright">
-			Inspired by <a href="#">FlowerPower</a> project.<br />
-			Copyright © 2017 <a href='#'>rocky.me</a> 2017
-		</div> -->
 	</div>
 	<script type="text/javascript">
 		var offsetX = $("#loveHeart").width() / 2;

@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>index</title>
+</head>
+<body>
+
+<br/>
+<br/>
+<br/>
+<br/>
+<div>
+    <b> point size: </b> <b id="pointSize"> 1 </b>
+    <br/>
+    <input min="0" max="5" type="range" step="0.1" value="1" oninput="changePointSize(this.value)">
+    <br/>
+
+    <b> min r: </b> <b id="minR"> 1 </b>
+    <br/>
+    <input min="0" max="1" type="range" step="0.01" value="0" oninput="changeMinR(this.value)">
+    <br/>
+
+    <b> max r: </b> <b id="maxR"> 1 </b>
+    <br/>
+    <input min="0" max="1" type="range" step="0.01" value="1" oninput="changeMaxR(this.value)">
+    <br/>
+
+    <b> min g: </b> <b id="minG"> 1 </b>
+    <br/>
+    <input min="0" max="1" type="range" step="0.01" value="0" oninput="changeMinG(this.value)">
+    <br/>
+
+    <b> max g: </b> <b id="maxG"> 1 </b>
+    <br/>
+    <input min="0" max="1" type="range" step="0.01" value="1" oninput="changeMaxG(this.value)">
+    <br/>
+
+    <b> min b: </b> <b id="minB"> 1 </b>
+    <br/>
+    <input min="0" max="1" type="range" step="0.01" value="0" oninput="changeMinB(this.value)">
+    <br/>
+
+    <b> max b: </b> <b id="maxB"> 1 </b>
+    <br/>
+    <input min="0" max="1" type="range" step="0.01" value="1" oninput="changeMaxB(this.value)">
+    <br/>
+
+    <br/>
+    <select id="select" onchange="onOptionChange(this.options[this.options.selectedIndex].value)">
+        <option value='all' selected >all</option>
+    </select>
+</div>
+<br/>
+<div id="Stats-output"> </div>
+<div id="WebGL-output"> </div>
+
+<script src="../../../build/three.js"></script>
+<script src="../../js/controls/OrbitControls.js"></script>
+<script src="../../js/libs/stats.min.js"></script>
+<script src="../../js/libs/dat.gui.min.js"></script>
+<script id="vertexShader" type="x-shader/x-vertex">
+			varying vec3 v_color;
+			varying float v_type_code;
+
+			attribute vec3 a_color;
+            attribute float a_type_code;
+
+			uniform float pointSize;
+
+			uniform int large_shrubs_for_instant_impact;
+            uniform int Alpines_rockeries;
+            uniform int bedding_plants;
+            uniform int climbers;
+
+            uniform int house_plants;
+            uniform int perennials;
+            uniform int plants_pots;
+            uniform int pond_plants;
+
+            uniform int roses;
+            uniform int seeds;
+            uniform int shrubs;
+            uniform int wildflowers;
+
+            uniform float minR;
+            uniform float maxR;
+
+            uniform float minG;
+            uniform float maxG;
+
+            uniform float minB;
+            uniform float maxB;
+
+			void main()	{
+			    v_color = a_color;
+			    v_type_code = a_type_code;
+
+			    gl_PointSize = pointSize;
+				gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+			}
+</script>
+
+<script id="fragmentShader" type="x-shader/x-fragment">
+			varying vec3 v_color;
+            varying float v_type_code;
+
+            uniform int large_shrubs_for_instant_impact;
+            uniform int Alpines_rockeries;
+            uniform int bedding_plants;
+            uniform int climbers;
+
+            uniform int house_plants;
+            uniform int perennials;
+            uniform int plants_pots;
+            uniform int pond_plants;
+
+            uniform int roses;
+            uniform int seeds;
+            uniform int shrubs;
+            uniform int wildflowers;
+
+            uniform float minR;
+            uniform float maxR;
+
+            uniform float minG;
+            uniform float maxG;
+
+            uniform float minB;
+            uniform float maxB;
+
+			void main()	{
+                if(large_shrubs_for_instant_impact == 0 && v_type_code == 1.0){
+                    discard;
+                }
+                if(Alpines_rockeries == 0 && v_type_code == 2.0){
+                    discard;
+                }
+                if(bedding_plants == 0 && v_type_code == 3.0){
+                    discard;
+                }
+                if(climbers == 0 && v_type_code == 4.0){
+                    discard;
+                }
+
+                if(house_plants == 0 && v_type_code == 5.0){
+                    discard;
+                }
+                if(perennials == 0 && v_type_code == 6.0){
+                    discard;
+                }
+                if(plants_pots == 0 && v_type_code == 7.0){
+                    discard;
+                }
+                if(pond_plants == 0 && v_type_code == 8.0){
+                    discard;
+                }
+
+                if(roses == 0 && v_type_code == 9.0){
+                    discard;
+                }
+                if(seeds == 0 && v_type_code == 10.0){
+                    discard;
+                }
+                if(shrubs == 0 && v_type_code == 11.0){
+                    discard;
+                }
+                if(wildflowers == 0 && v_type_code == 12.0){
+                    discard;
+                }
+
+                if(v_color.x < minR || v_color.x > maxR){
+                    discard;
+                }
+
+                if(v_color.y < minG || v_color.y > maxG){
+                    discard;
+                }
+
+                if(v_color.z < minB || v_color.z > maxB){
+                    discard;
+                }
+
+				gl_FragColor = vec4(v_color.xyz, 1.0);
+			}
+</script>
+
+<script>
+    var scene, camera, renderer, group, stats;
+    var orbitControls;
+
+    var cubeLen = 0; // 展示区域正方体的边长，用 HSV.json 中，max(h，s，v)
+    var hsvTypeSet = new Set();
+
+    var uniforms = {
+        pointSize: { value: 1.0 },
+        "large_shrubs_for_instant_impact": { value: 1 },
+        "Alpines_rockeries": { value: 1 },
+        "bedding_plants": { value: 1 },
+        "climbers": { value: 1 },
+        "house_plants": { value: 1 },
+        "perennials": { value: 1 },
+        "plants_pots": { value: 1 },
+        "pond_plants": { value: 1 },
+        "roses": { value: 1 },
+        "seeds": { value: 1 },
+        "shrubs": { value: 1 },
+        "wildflowers": { value: 1 },
+
+        "minR": { value: 0.0 },
+        "maxR": { value: 1.0 },
+
+        "minG": { value: 0.0 },
+        "maxG": { value: 1.0 },
+
+        "minB": { value: 0.0 },
+        "maxB": { value: 1.0 }
+    };
+
+    // const large_shrubs_for_instant_impact = 1;
+    // const Alpines_rockeries = 2;
+    // const bedding_plants = 3;
+    // const climbers = 4;
+    //
+    // const house_plants = 5;
+    // const perennials = 6;
+    // const plants_pots = 7;
+    // const pond_plants = 8;
+    //
+    // const roses = 9;
+    // const seeds = 10;
+    // const shrubs = 11;
+    // const wildflowers = 12;
+
+    init();
+    loadHSV();
+
+    addOrbitControls();
+    animate();
+
+    function init() {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 3000 );
+        camera.position.set(0, 400, 1400 );
+
+        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer.setClearColor( new THREE.Color( 0xE8E8E8 ), 1.0 );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.shadowMapEnabled = true;
+
+        scene.add( camera );
+
+        var ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
+        scene.add( ambientLight );
+
+        var pointLight = new THREE.PointLight( 0xffffff, 0.7 );
+        camera.add( pointLight );
+
+        document.getElementById( "WebGL-output" ).appendChild( renderer.domElement );
+
+        stats = new Stats();
+        document.getElementById( "Stats-output" ).appendChild( stats.dom );
+
+        group = new THREE.Group();
+        group.position.x = -300;
+        // group.rotateX(Math.PI / 4)
+        scene.add( group );
+        window.addEventListener( 'resize', onWindowResize, false );
+    }
+
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+    }
+
+    function HSVtoRGB(h, s, v) {
+        var r, g, b, i, f, p, q, t;
+        if (arguments.length === 1) {
+            s = h.s, v = h.v, h = h.h;
+        }
+        i = Math.floor(h * 6);
+        f = h * 6 - i;
+        p = v * (1 - s);
+        q = v * (1 - f * s);
+        t = v * (1 - (1 - f) * s);
+        switch (i % 6) {
+            case 0: r = v, g = t, b = p; break;
+            case 1: r = q, g = v, b = p; break;
+            case 2: r = p, g = v, b = t; break;
+            case 3: r = p, g = q, b = v; break;
+            case 4: r = t, g = p, b = v; break;
+            case 5: r = v, g = p, b = q; break;
+        }
+        return {
+            r: Math.round(r * 255),
+            g: Math.round(g * 255),
+            b: Math.round(b * 255)
+        };
+    }
+
+    function loadHSV() {
+        console.log('load hsv');
+
+        const colors = [];
+        const positions = [];
+        const typeCodes = [];
+
+        var material = new THREE.ShaderMaterial( {
+            uniforms: uniforms,
+            vertexShader: document.getElementById( 'vertexShader' ).textContent,
+            fragmentShader: document.getElementById( 'fragmentShader' ).textContent
+        } );
+
+        var loader = new THREE.FileLoader();
+        loader.load(
+            './HSV.json',
+            function ( data ) {
+                var hsvArr = JSON.parse(data);
+                var i = 0;
+                for (; i < hsvArr.length; i++) {
+                    var hsv = hsvArr[i];
+                    var h = parseInt(hsv.H);
+                    var s = parseInt(hsv.S);
+                    var v = parseInt(hsv.V);
+
+                    cubeLen = Math.max(h, s, v, cubeLen);
+
+                    positions.push(h);
+                    positions.push(s);
+                    positions.push(v);
+
+                    colors.push(Math.random()*255);
+                    colors.push(Math.random()*255);
+                    colors.push(Math.random()*255);
+
+                    hsvTypeSet.add(hsv.type);
+
+                    switch (hsv.type) {
+                            // uniforms.large_shrubs_for_instant_impact.value = 1;
+                            // uniforms.Alpines_rockeries.value = 1;
+                            // uniforms.bedding_plants.value = 1;
+                            // uniforms.climbers.value = 1;
+                            // uniforms.house_plants.value = 1;
+                            // uniforms.perennials.value = 1;
+                            // uniforms.plants_pots.value = 1;
+                            // uniforms.pond_plants.value = 1;
+                            // uniforms.roses.value = 1;
+                            // uniforms.seeds.value = 1;
+                            // uniforms.shrubs.value = 1;
+                            // uniforms.wildflowers.value = 1;
+
+                        //     const large_shrubs_for_instant_impact = 1;
+                        //     const Alpines_rockeries = 2;
+                        //     const bedding_plants = 3;
+                        //     const climbers = 4;
+                        //
+                        //     const house_plants = 5;
+                        //     const perennials = 6;
+                        //     const plants_pots = 7;
+                        //     const pond_plants = 8;
+                        //
+                        //     const roses = 9;
+                        //     const seeds = 10;
+                        //     const shrubs = 11;
+                        //     const wildflowers = 12;
+                        case "large-shrubs-for-instant-impact": {
+                            typeCodes.push(1);
+                            break;
+                        }
+                        case "Alpines & rockeries": {
+                            typeCodes.push(2);
+                            break;
+                        }
+                        case "bedding-plants": {
+                            typeCodes.push(3);
+                            break;
+                        }
+                        case "climbers": {
+                            typeCodes.push(4);
+                            break;
+                        }
+                        case "house-plants": {
+                            typeCodes.push(5);
+                            break;
+                        }
+                        case "perennials": {
+                            typeCodes.push(6);
+                            break;
+                        }
+                        case "plants-pots": {
+                            typeCodes.push(7);
+                            break;
+                        }
+                        case "pond-plants": {
+                            typeCodes.push(8);
+                            break;
+                        }
+                        case "roses": {
+                            typeCodes.push(9);
+                            break;
+                        }
+                        case "seeds": {
+                            typeCodes.push(10);
+                            break;
+                        }
+                        case "shrubs": {
+                            typeCodes.push(11);
+                            break;
+                        }
+                        case "wildflowers": {
+                            typeCodes.push(12);
+                            break;
+                        }
+                    }
+                }
+
+                const bufferGeometry = new THREE.BufferGeometry();
+                const positionAttribute = new THREE.Float32BufferAttribute(positions, 3);
+                const colorAttribute = new THREE.Uint8BufferAttribute(colors, 3);
+                const typeCodeAttribute = new THREE.Float32BufferAttribute(typeCodes, 1);
+
+                bufferGeometry.addAttribute('a_type_code', typeCodeAttribute);
+                bufferGeometry.addAttribute('position', positionAttribute);
+                bufferGeometry.addAttribute('a_color', colorAttribute);
+                // this will map the buffer values to 0.0f - +1.0f in the shader
+                colorAttribute.normalized = true;
+
+                const points = new THREE.Points( bufferGeometry, material );
+                group.add( points );
+                points.userData = {type: hsv.type};
+
+                addPrintSpace();
+
+                var select = document.getElementById("select");
+                hsvTypeSet.forEach(function (element, sameElement, set) {
+                    // console.log("p1="+element+",p2="+sameElement);
+
+                    // var value = element.replace(' ', '').replace(' ', '').replace('-', '_').replace('&', '_').replace('-', '_').replace('-', '_').replace('-', '_').replace('-', '_');
+                    var opt = new Option(element, element);
+                    console.log(element);
+                    select.options.add(opt);
+                });
+                // console.log('hsvTypeSet: ' + JSON.stringify(hsvTypeSet))
+            },
+
+            // onProgress callback
+            function ( xhr ) {
+                console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+            },
+
+            // onError callback
+            function ( err ) {
+                console.error( 'An error happened' );
+            }
+        );
+    }
+
+    function addPrintSpace() {
+        console.log('cubeLen： ' + cubeLen)
+        // add 6 sides of print space
+        var size = cubeLen;
+        var divisions = 1;
+
+        var cubeSpace = new THREE.Object3D();
+
+        var bottom = new THREE.GridHelper( size, divisions * 10  );
+        bottom.position.set( 0, -size/2, 0 );
+        cubeSpace.add( bottom );
+
+        var top = new THREE.GridHelper( size, divisions );
+        top.position.set( 0, size/2, 0 );
+        cubeSpace.add( top );
+
+        var left = new THREE.GridHelper( size, divisions );
+        left.rotateZ ( Math.PI/2 );
+        left.position.set( -size/2, 0, 0 );
+        cubeSpace.add( left );
+
+        var right = new THREE.GridHelper( size, divisions );
+        right.rotateZ ( Math.PI/2 );
+        right.position.set( size/2, 0, 0 );
+        cubeSpace.add( right );
+
+        var front = new THREE.GridHelper( size, divisions );
+        front.rotateX ( Math.PI/2 );
+        front.position.set( 0, 0, size/2);
+        cubeSpace.add( front );
+
+        var back = new THREE.GridHelper( size, divisions );
+        back.rotateX ( Math.PI/2 );
+        back.position.set( 0, 0, -size/2);
+        cubeSpace.add( back );
+
+        for ( var k = 0; k < cubeSpace.children.length; k += 1 ) {
+            cubeSpace.children[ k ].material.opacity = 0.25;
+            cubeSpace.children[ k ].material.transparent = true;
+        }
+
+        cubeSpace.position.set(cubeLen/2, cubeLen/2, cubeLen/2);
+        group.add(cubeSpace);
+
+        // var axis = new THREE.AxesHelper( 50 );
+        // axis.position.y = -125/2;
+        // group.add( axis );
+    }
+
+    function addOrbitControls() {
+        orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+        //tip : must call 'render()' rather than 'animate()', or UI lags
+        orbitControls.addEventListener('change', render);
+    }
+
+    function animate() {
+        requestAnimationFrame( animate );
+        render();
+        stats.update();
+    }
+
+    function render() {
+        renderer.render( scene, camera );
+    }
+
+    function hideAll() {
+        Object.keys(uniforms).forEach(function(key){
+            if (key !== 'pointSize'){
+                uniforms[key].value = 0;
+            }
+        });
+    }
+    function showAll() {
+        Object.keys(uniforms).forEach(function(key){
+            if (key !== 'pointSize'){
+                uniforms[key].value = 1;
+            }
+        });
+    }
+
+    function onOptionChange(value) {
+        console.log('value: ' + value);
+        switch (value) {
+            case "all": {
+                showAll();
+
+                // uniforms.large_shrubs_for_instant_impact.value = 1;
+                // uniforms.Alpines_rockeries.value = 1;
+                // uniforms.bedding_plants.value = 1;
+                // uniforms.climbers.value = 1;
+                // uniforms.house_plants.value = 1;
+                // uniforms.perennials.value = 1;
+                // uniforms.plants_pots.value = 1;
+                // uniforms.pond_plants.value = 1;
+                // uniforms.roses.value = 1;
+                // uniforms.seeds.value = 1;
+                // uniforms.shrubs.value = 1;
+                // uniforms.wildflowers.value = 1;
+                break;
+            }
+            case "large-shrubs-for-instant-impact": {
+                hideAll();
+                uniforms.large_shrubs_for_instant_impact.value = 1;
+                break;
+            }
+            case "Alpines & rockeries": {
+                hideAll();
+                uniforms.Alpines_rockeries.value = 1;
+                break;
+            }
+            case "bedding-plants": {
+                hideAll();
+                uniforms.bedding_plants.value = 1;
+                break;
+            }
+            case "climbers": {
+                hideAll();
+                uniforms.climbers.value = 1;
+                break;
+            }
+            case "house-plants": {
+                hideAll();
+                uniforms.house_plants.value = 1;
+                break;
+            }
+            case "perennials": {
+                hideAll();
+                uniforms.perennials.value = 1;
+                break;
+            }
+            case "plants-pots": {
+                hideAll();
+                uniforms.plants_pots.value = 1;
+                break;
+            }
+            case "pond-plants": {
+                hideAll();
+                uniforms.pond_plants.value = 1;
+                break;
+            }
+            case "roses": {
+                hideAll();
+                uniforms.roses.value = 1;
+                break;
+            }
+            case "seeds": {
+                hideAll();
+                uniforms.seeds.value = 1;
+                break;
+            }
+            case "shrubs": {
+                hideAll();
+                uniforms.shrubs.value = 1;
+                break;
+            }
+            case "wildflowers": {
+                hideAll();
+                uniforms.wildflowers.value = 1;
+                break;
+            }
+        }
+    }
+
+    function changePointSize(value) {
+        duration = value;
+        uniforms.pointSize.value = value;
+        document.getElementById( "pointSize" ).innerText = value;
+    }
+
+
+    function changeMinR(value) {
+        uniforms.minR.value = value;
+        document.getElementById( "minR" ).innerText = Math.round(value * 255);
+    }
+
+    function changeMaxR(value) {
+        uniforms.maxR.value = value;
+        document.getElementById( "maxR" ).innerText = Math.round(value * 255);
+    }
+
+
+    function changeMinG(value) {
+        uniforms.minG.value = value;
+        document.getElementById( "minG" ).innerText = Math.round(value * 255);
+    }
+
+    function changeMaxG(value) {
+        uniforms.maxG.value = value;
+        document.getElementById( "maxG" ).innerText = Math.round(value * 255);
+    }
+
+
+    function changeMinB(value) {
+        uniforms.minB.value = value;
+        document.getElementById( "minB" ).innerText = Math.round(value * 255);
+    }
+
+    function changeMaxB(value) {
+        uniforms.maxB.value = value;
+        document.getElementById( "maxB" ).innerText = Math.round(value * 255);
+    }
+
+</script>
+
+</body>
+</html>

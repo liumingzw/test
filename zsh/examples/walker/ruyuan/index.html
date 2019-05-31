@@ -5,54 +5,75 @@
 </head>
 <body>
 
-<br/>
-<br/>
-<br/>
-<br/>
-<div>
-    <b> point size: </b> <b id="pointSize"> 1 </b>
-    <br/>
-    <input min="0" max="5" type="range" step="0.1" value="1" oninput="changePointSize(this.value)">
-    <br/>
+<style>
+    body{ margin:0; height:100%}
+    html{ height:100%}
+    #left{ position:absolute; padding-left: 10px;padding-right: 10px; top:0; left:0; width:200px; height:100%; background-color:#CCCCCC}
+    #WebGL-output{ margin-left:200px; height:100%; background-color:#0099FF}
+</style>
 
-    <b> min r: </b> <b id="minR"> 1 </b>
+<div id="left">
     <br/>
-    <input min="0" max="1" type="range" step="0.01" value="0" oninput="changeMinR(this.value)">
     <br/>
+    <br/>
+    <br/>
+    <div>
+        <b style="color: #FF0000;"> Red: H </b><br/>
+        <b style="color: #00FF00;"> Green: S </b><br/>
+        <b style="color: #0000FF;"> Blue: V </b><br/><br/>
 
-    <b> max r: </b> <b id="maxR"> 1 </b>
-    <br/>
-    <input min="0" max="1" type="range" step="0.01" value="1" oninput="changeMaxR(this.value)">
-    <br/>
+        <b> point size: </b> <b id="pointSize"> 1 </b>
+        <br/>
+        <input min="0" max="5" type="range" step="0.1" value="1" oninput="changePointSize(this.value)">
+        <br/>
+        <br/>
 
-    <b> min g: </b> <b id="minG"> 1 </b>
-    <br/>
-    <input min="0" max="1" type="range" step="0.01" value="0" oninput="changeMinG(this.value)">
-    <br/>
+        <b> min r: </b> <b id="minR"> 0 </b>
+        <br/>
+        <input min="0" max="1" type="range" step="0.01" value="0" oninput="changeMinR(this.value)">
+        <br/>
 
-    <b> max g: </b> <b id="maxG"> 1 </b>
-    <br/>
-    <input min="0" max="1" type="range" step="0.01" value="1" oninput="changeMaxG(this.value)">
-    <br/>
+        <b> max r: </b> <b id="maxR"> 255 </b>
+        <br/>
+        <input min="0" max="1" type="range" step="0.01" value="1" oninput="changeMaxR(this.value)">
+        <br/>
+        <br/>
 
-    <b> min b: </b> <b id="minB"> 1 </b>
-    <br/>
-    <input min="0" max="1" type="range" step="0.01" value="0" oninput="changeMinB(this.value)">
-    <br/>
+        <b> min g: </b> <b id="minG"> 0 </b>
+        <br/>
+        <input min="0" max="1" type="range" step="0.01" value="0" oninput="changeMinG(this.value)">
+        <br/>
 
-    <b> max b: </b> <b id="maxB"> 1 </b>
-    <br/>
-    <input min="0" max="1" type="range" step="0.01" value="1" oninput="changeMaxB(this.value)">
-    <br/>
+        <b> max g: </b> <b id="maxG"> 255 </b>
+        <br/>
+        <input min="0" max="1" type="range" step="0.01" value="1" oninput="changeMaxG(this.value)">
+        <br/>
+        <br/>
 
+        <b> min b: </b> <b id="minB"> 0 </b>
+        <br/>
+        <input min="0" max="1" type="range" step="0.01" value="0" oninput="changeMinB(this.value)">
+        <br/>
+
+        <b> max b: </b> <b id="maxB"> 255 </b>
+        <br/>
+        <input min="0" max="1" type="range" step="0.01" value="1" oninput="changeMaxB(this.value)">
+        <br/>
+        <br/>
+
+        <br/>
+        <select id="select" onchange="onOptionChange(this.options[this.options.selectedIndex].value)">
+            <option value='all' selected >all</option>
+        </select>
+    </div>
     <br/>
-    <select id="select" onchange="onOptionChange(this.options[this.options.selectedIndex].value)">
-        <option value='all' selected >all</option>
-    </select>
 </div>
-<br/>
+
+<div id="WebGL-output"></div>
+
+
 <div id="Stats-output"> </div>
-<div id="WebGL-output"> </div>
+<!--<div id="WebGL-output"> </div>-->
 
 <script src="../../../build/three.js"></script>
 <script src="../../js/controls/OrbitControls.js"></script>
@@ -318,21 +339,40 @@
             function ( data ) {
                 var hsvArr = JSON.parse(data);
                 var i = 0;
+
+                var maxH = 0;
+                var maxS = 0;
+                var maxV = 0;
+                var j = 0;
+                for (; j < hsvArr.length; j++) {
+                    var hsv = hsvArr[j];
+                    var h1 = parseInt(hsv.H);
+                    var s1 = parseInt(hsv.S);
+                    var v1 = parseInt(hsv.V);
+                    maxH = Math.max(h1, maxH);
+                    maxS = Math.max(s1, maxS);
+                    maxV = Math.max(v1, maxV);
+                }
+
+                console.log('maxH: ' + maxH);
+                console.log('maxS: ' + maxS);
+                console.log('maxV: ' + maxV);
+
+                cubeLen = Math.max(maxH, maxS, maxV, cubeLen);
+
                 for (; i < hsvArr.length; i++) {
                     var hsv = hsvArr[i];
                     var h = parseInt(hsv.H);
                     var s = parseInt(hsv.S);
                     var v = parseInt(hsv.V);
 
-                    cubeLen = Math.max(h, s, v, cubeLen);
-
                     positions.push(h);
-                    positions.push(s);
-                    positions.push(v);
+                    positions.push(s * 3.6);
+                    positions.push(v * 3.6);
 
-                    colors.push(Math.random()*255);
-                    colors.push(Math.random()*255);
-                    colors.push(Math.random()*255);
+                    colors.push(Math.random() * 255);
+                    colors.push(Math.random() * 255);
+                    colors.push(Math.random() * 255);
 
                     hsvTypeSet.add(hsv.type);
 
@@ -457,7 +497,7 @@
     }
 
     function addPrintSpace() {
-        console.log('cubeLen： ' + cubeLen)
+        console.log('cubeLen: ' + cubeLen)
         // add 6 sides of print space
         var size = cubeLen;
         var divisions = 1;
@@ -500,9 +540,9 @@
         cubeSpace.position.set(cubeLen/2, cubeLen/2, cubeLen/2);
         group.add(cubeSpace);
 
-        // var axis = new THREE.AxesHelper( 50 );
-        // axis.position.y = -125/2;
-        // group.add( axis );
+        var axis = new THREE.AxesHelper( 360 * 1.2 );
+        axis.position.y = 0;
+        group.add( axis );
     }
 
     function addOrbitControls() {
@@ -523,21 +563,20 @@
 
     function hideAll() {
         Object.keys(uniforms).forEach(function(key){
-            if (key !== 'pointSize'){
+            if (key !== 'pointSize' && key.indexOf('min') === -1 && key.indexOf('max') === -1){
                 uniforms[key].value = 0;
             }
         });
     }
     function showAll() {
         Object.keys(uniforms).forEach(function(key){
-            if (key !== 'pointSize'){
+            if (key !== 'pointSize' && key.indexOf('min') === -1 && key.indexOf('max') === -1){
                 uniforms[key].value = 1;
             }
         });
     }
 
     function onOptionChange(value) {
-        console.log('value: ' + value);
         switch (value) {
             case "all": {
                 showAll();
